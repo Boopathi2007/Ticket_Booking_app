@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Tickets – EventEase</title>
+  <meta name="description" content="View and manage your booked tickets on EventEase." />
+
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    .tickets-container { padding: 3rem 0 5rem; max-width: 900px; margin: 0 auto; }
+    .ticket-card {
+      background: #FFFFFF; border: 1px solid #EEF2F6; border-radius: 20px;
+      margin-bottom: 1.75rem; display: grid; grid-template-columns: 1fr 220px;
+      overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04); position: relative;
+      transition: box-shadow 0.22s ease, transform 0.22s ease;
+    }
+    .ticket-card:hover { box-shadow: 0 12px 32px rgba(94,23,235,0.12); transform: translateY(-2px); }
+    .ticket-left { padding: 1.75rem 2rem; border-right: 2px dashed #E2E8F0; position: relative; }
+    .ticket-right { background: #F8FAFC; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; }
+    .qr-box { width: 118px; height: 118px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .qr-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+    .ticket-badge-confirmed { background: #DCFCE7; color: #15803D; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); display: inline-block; margin-bottom: 0.75rem; }
+    .ticket-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+    .btn-ticket-action { padding: 0.5rem 1rem; border-radius: var(--radius-pill); font-size: 0.84rem; font-weight: 600; cursor: pointer; border: 1.5px solid #E2E8F0; background: #FFFFFF; color: var(--text-dark); transition: var(--transition-fast); display: inline-flex; align-items: center; gap: 0.4rem; }
+    .btn-ticket-action:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+    .btn-ticket-download { background: var(--primary); color: #FFFFFF; border-color: var(--primary); }
+    .btn-ticket-download:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #FFFFFF; }
+    .btn-ticket-cancel { color: #EF4444; border-color: #FEE2E2; background: #FEF2F2; }
+    .btn-ticket-cancel:hover { background: #EF4444; color: #FFFFFF; border-color: #EF4444; }
+    @media (max-width: 768px) { .ticket-card { grid-template-columns: 1fr; } .ticket-left { border-right: none; border-bottom: 2px dashed #E2E8F0; } }
+
+    /* Download Modal */
+    .dl-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+    .dl-modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .dl-modal-wrap { background: #FFFFFF; border-radius: 24px; box-shadow: 0 32px 80px rgba(0,0,0,0.25); max-width: 500px; width: 100%; overflow: hidden; transform: translateY(24px) scale(0.97); transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+    .dl-modal-overlay.open .dl-modal-wrap { transform: translateY(0) scale(1); }
+    .dl-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; }
+    .dl-modal-header h3 { font-size: 1rem; font-weight: 700; color: var(--text-heading); display: flex; align-items: center; gap: 0.5rem; }
+    .btn-modal-close { width: 32px; height: 32px; border: none; background: #F1F5F9; border-radius: 50%; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: var(--transition-fast); }
+    .btn-modal-close:hover { background: #E2E8F0; }
+    .dl-modal-body { padding: 1rem 1.5rem; }
+    .dl-ticket-preview-note { text-align: center; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .dl-modal-footer { padding: 1rem 1.5rem 1.4rem; display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid #F1F5F9; }
+    .btn-close-modal { padding: 0.6rem 1.3rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1.5px solid #E2E8F0; background: #FFFFFF; color: var(--text-dark); transition: var(--transition-fast); }
+    .btn-close-modal:hover { background: #F8FAFC; }
+    .btn-download-now { padding: 0.6rem 1.5rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(135deg,#5E17EB,#9333EA); color: #FFFFFF; display: inline-flex; align-items: center; gap: 0.5rem; transition: var(--transition-fast); box-shadow: 0 4px 16px rgba(94,23,235,0.35); }
+    .btn-download-now:hover { box-shadow: 0 6px 24px rgba(94,23,235,0.5); transform: translateY(-1px); }
+    .btn-download-now:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    /* Printable Ticket */
+    #printable-ticket { font-family: 'Plus Jakarta Sans','Inter',sans-serif; background: linear-gradient(135deg,#2D0B7A 0%,#5E17EB 50%,#9333EA 100%); position: relative; overflow: hidden; }
+    .pt-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+    .pt-header { padding: 1.6rem 1.8rem 1.2rem; display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; }
+    .pt-brand { display: flex; align-items: center; gap: 0.5rem; color: rgba(255,255,255,0.85); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .pt-brand-icon { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #FFF; }
+    .pt-status-badge { background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5); color: #6EE7B7; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.7rem; border-radius: 999px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .pt-title-section { padding: 0 1.8rem 1.4rem; position: relative; z-index: 2; }
+    .pt-event-title { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; line-height: 1.25; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+    .pt-tier-tag { display: inline-block; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); font-size: 0.75rem; font-weight: 700; padding: 0.22rem 0.7rem; border-radius: 999px; letter-spacing: 0.04em; }
+    .pt-tear { display: flex; align-items: center; position: relative; z-index: 2; }
+    .pt-tear-circle-left, .pt-tear-circle-right { width: 22px; height: 22px; background: #F8FAFC; border-radius: 50%; flex-shrink: 0; }
+    .pt-tear-circle-left { margin-left: -11px; }
+    .pt-tear-circle-right { margin-right: -11px; }
+    .pt-tear-line { flex: 1; border-top: 2px dashed rgba(255,255,255,0.3); }
+    .pt-body { background: #FFFFFF; padding: 1.4rem 1.8rem 1.6rem; position: relative; z-index: 2; }
+    .pt-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.9rem 1.2rem; margin-bottom: 1.3rem; }
+    .pt-info-item label { display: block; font-size: 0.65rem; font-weight: 700; color: #94A3B8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .pt-info-item strong { display: block; font-size: 0.82rem; font-weight: 700; color: #0F172A; line-height: 1.35; }
+    .pt-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px dashed #E2E8F0; padding-top: 1.1rem; }
+    .pt-qr-section { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+    .pt-qr-wrapper { width: 88px; height: 88px; padding: 5px; background: #FFF; border: 1.5px solid #E2E8F0; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .pt-qr-wrapper img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .pt-scan-label { font-size: 0.62rem; color: #94A3B8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .pt-booking-id-block { flex: 1; text-align: right; }
+    .pt-booking-ref { font-family: 'Courier New',monospace; font-size: 1.05rem; font-weight: 800; color: #5E17EB; letter-spacing: 0.04em; }
+    .pt-booking-note { font-size: 0.72rem; color: #94A3B8; margin-top: 0.25rem; }
+    .pt-watermark { font-size: 0.65rem; color: #CBD5E1; margin-top: 0.75rem; text-align: center; letter-spacing: 0.05em; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #FFF; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <!-- Navbar -->
+  <header class="navbar-top">
+    <div class="container navbar-top-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="brand-icon-box">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        <span class="brand-text">Event<span>Ease</span></span>
+      </a>
+
+      <nav>
+        <ul class="nav-center-menu">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="events.html">Explore</a></li>
+          <li><a href="tickets.html" class="active">My Tickets</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-right-actions" id="nav-user-area">
+        <!-- Rendered dynamically by Auth.renderHeaderNav() -->
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="tickets-container">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+        <div>
+          <h1 style="font-size: 2rem; margin-bottom: 0.35rem; color: var(--text-heading);">My Tickets</h1>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">Manage your active bookings and download digital QR entry passes.</p>
+        </div>
+        <a href="events.html" class="btn-pill-white" style="background: var(--primary); color: #FFFFFF; padding: 0.65rem 1.4rem; font-size: 0.9rem;">
+          <i class="fas fa-plus" style="margin-right: 0.4rem;"></i> Book More
+        </a>
+      </div>
+
+      <!-- Tickets List -->
+      <div id="tickets-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-logo">
+        <div class="logo-box">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        Event<span>Ease</span>
+      </div>
+      <div class="footer-copy">
+        2026 EventEase. Made with love for event lovers.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Download Ticket Modal -->
+  <div class="dl-modal-overlay" id="dl-modal-overlay">
+    <div class="dl-modal-wrap">
+      <div class="dl-modal-header">
+        <h3><i class="fas fa-ticket-alt" style="color:var(--primary);"></i> Your Entry Pass</h3>
+        <button class="btn-modal-close" onclick="closeDownloadModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="dl-modal-body">
+        <p class="dl-ticket-preview-note"><i class="fas fa-eye" style="margin-right:0.3rem;color:var(--primary);"></i> Preview your ticket then click <strong>Download PNG</strong></p>
+        <div id="printable-ticket">
+          <div class="pt-orb" style="top:-80px;right:-80px;width:260px;height:260px;background:rgba(255,255,255,0.06);"></div>
+          <div class="pt-orb" style="bottom:-60px;left:-60px;width:200px;height:200px;background:rgba(255,255,255,0.05);"></div>
+          <div class="pt-header">
+            <div class="pt-brand"><div class="pt-brand-icon"><i class="fas fa-ticket-alt"></i></div>EventEase</div>
+            <span class="pt-status-badge">Confirmed</span>
+          </div>
+          <div class="pt-title-section">
+            <div class="pt-event-title" id="pt-event-title">—</div>
+            <span class="pt-tier-tag" id="pt-tier-tag">—</span>
+          </div>
+          <div class="pt-tear">
+            <div class="pt-tear-circle-left"></div>
+            <div class="pt-tear-line"></div>
+            <div class="pt-tear-circle-right"></div>
+          </div>
+          <div class="pt-body">
+            <div class="pt-info-grid">
+              <div class="pt-info-item"><label>Date &amp; Time</label><strong id="pt-date">—</strong></div>
+              <div class="pt-info-item"><label>Venue</label><strong id="pt-venue">—</strong></div>
+              <div class="pt-info-item"><label>Quantity</label><strong id="pt-quantity">—</strong></div>
+              <div class="pt-info-item"><label>Attendee</label><strong id="pt-attendee">—</strong></div>
+              <div class="pt-info-item"><label>Amount Paid</label><strong id="pt-amount" style="color:#5E17EB;">—</strong></div>
+              <div class="pt-info-item"><label>Booked On</label><strong id="pt-booked-on">—</strong></div>
+            </div>
+            <div class="pt-bottom-row">
+              <div class="pt-qr-section">
+                <div class="pt-qr-wrapper"><img id="pt-qr-img" src="" alt="QR Code" crossorigin="anonymous" /></div>
+                <span class="pt-scan-label">Scan at Gate</span>
+              </div>
+              <div class="pt-booking-id-block">
+                <div class="pt-booking-ref" id="pt-booking-ref">—</div>
+                <div class="pt-booking-note">Booking Reference</div>
+                <div class="pt-booking-note" style="margin-top:0.4rem;font-size:0.62rem;color:#CBD5E1;" id="pt-txn-id">—</div>
+              </div>
+            </div>
+            <div class="pt-watermark">Generated by EventEase &middot; Digital Entry Pass &middot; Not for resale</div>
+          </div>
+        </div>
+      </div>
+      <div class="dl-modal-footer">
+        <button class="btn-close-modal" onclick="closeDownloadModal()">Close</button>
+        <button class="btn-download-now" id="btn-download-now" onclick="executeDownload()"><i class="fas fa-download"></i> Download PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      Auth.renderHeaderNav('nav-user-area');
+      renderTickets();
+      document.getElementById('dl-modal-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeDownloadModal();
+      });
+    });
+
+    // Build rich QR payload encoding all booking info as a JSON string
+    function buildQRPayload(b) {
+      var user = Auth.getUser();
+      var payload = {
+        id: b.bookingId,
+        event: b.eventTitle,
+        venue: b.venue,
+        date: b.dateDisplay,
+        tier: b.tier,
+        qty: b.quantity,
+        attendee: b.userName || (user ? user.name : 'Guest'),
+        email: b.userEmail || (user ? user.email : ''),
+        amount: b.totalAmount,
+        status: b.status || 'CONFIRMED',
+        bookedOn: b.bookedOn || '',
+        issuer: 'EventEase'
+      };
+      return encodeURIComponent(JSON.stringify(payload));
+    }
+
+    function buildQRUrl(b, size) {
+      size = size || 150;
+      return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&ecc=M&data=' + buildQRPayload(b);
+    }
+
+    function renderTickets() {
+      var container = document.getElementById('tickets-list');
+
+      if (!Auth.isLoggedIn()) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 4.5rem 1.5rem; background: #FFFFFF; border-radius: 20px; border: 1px solid #EEF2F6; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔒</div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--text-heading);">Sign In to View Your Tickets</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.8rem; max-width: 440px; margin-left: auto; margin-right: auto;">
+              Access your confirmed bookings, download QR passes, and receive live event updates by signing into your account.
+            </p>
+            <div style="display:flex; justify-content:center; gap:1rem;">
+              <a href="login.html?redirect=tickets.html" class="btn-pill-white" style="background: var(--primary); color: #FFFFFF; padding: 0.85rem 2rem;">
+                Sign In
+              </a>
+              <a href="events.html" class="btn-pill-white" style="background: #F1F5F9; color: var(--text-dark); padding: 0.85rem 1.8rem;">
+                Browse Events
+              </a>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const bookings = EventStore.getBookings();
+
+      if (!bookings.length) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 4rem 1.5rem; background: #FFFFFF; border-radius: 20px; border: 1px solid #EEF2F6;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎟️</div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">No Active Tickets Found</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">You haven't booked any event tickets yet.</p>
+            <a href="events.html" class="btn-pill-white" style="background: var(--primary); color: #FFFFFF;">
+              Discover Events
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = bookings.map(b => `
+        <div class="ticket-card" id="ticket-${b.bookingId}">
+          <div class="ticket-left">
+            <span class="ticket-badge-confirmed"><i class="fas fa-check-circle"></i> ${b.status}</span>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.5rem;">${b.eventTitle}</h2>
+            <div style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+              <i class="far fa-calendar-alt" style="color: var(--primary); width: 16px;"></i> ${b.dateDisplay}
+            </div>
+            <div style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+              <i class="fas fa-map-marker-alt" style="color: var(--primary); width: 16px;"></i> ${b.venue}
+            </div>
+
+            <div style="display: flex; gap: 2rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #F1F5F9; font-size: 0.86rem;">
+              <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.76rem;">TIER</span>
+                <strong>${b.tier}</strong>
+              </div>
+              <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.76rem;">QUANTITY</span>
+                <strong>${b.quantity} Ticket(s)</strong>
+              </div>
+              <div>
+                <span style="color: var(--text-muted); display: block; font-size: 0.76rem;">TOTAL PAID</span>
+                <strong style="color: var(--primary);">${b.totalAmount === 0 ? 'Free' : '₹' + b.totalAmount.toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            <div class="ticket-actions">
+              <button class="btn-ticket-action btn-ticket-download" onclick="openDownloadModal('${b.bookingId}')">
+                <i class="fas fa-download"></i> Download Ticket
+              </button>
+              <button class="btn-ticket-action btn-ticket-cancel" onclick="cancelTicket('${b.bookingId}')">
+                <i class="fas fa-times"></i> Cancel Ticket
+              </button>
+            </div>
+          </div>
+
+          <div class="ticket-right">
+            <div class="qr-box">
+              <img src="${buildQRUrl(b, 150)}" alt="QR Code for ${b.bookingId}" title="Scan this QR at the venue entrance" />
+            </div>
+            <div style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-dark);">${b.bookingId}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 0.2rem;">Scan at Venue Entrance</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    var _currentBooking = null;
+
+    function openDownloadModal(bookingId) {
+      var bookings = EventStore.getBookings();
+      var b = null;
+      for (var i = 0; i < bookings.length; i++) {
+        if (bookings[i].bookingId === bookingId) { b = bookings[i]; break; }
+      }
+      if (!b) return;
+      _currentBooking = b;
+
+      var user = Auth.getUser();
+      var attendeeName = b.userName || (user ? user.name : 'Guest');
+      var amountLabel = b.totalAmount === 0 ? 'Free' : '\u20b9' + b.totalAmount.toLocaleString('en-IN');
+      var txnId = 'TXN-' + b.bookingId.replace('EVT-', '') + 'EE';
+
+      document.getElementById('pt-event-title').textContent = b.eventTitle;
+      document.getElementById('pt-tier-tag').textContent    = b.tier;
+      document.getElementById('pt-date').textContent        = b.dateDisplay;
+      document.getElementById('pt-venue').textContent       = b.venue;
+      document.getElementById('pt-quantity').textContent    = b.quantity + ' Ticket(s)';
+      document.getElementById('pt-attendee').textContent    = attendeeName;
+      document.getElementById('pt-amount').textContent      = amountLabel;
+      document.getElementById('pt-booked-on').textContent   = b.bookedOn || 'N/A';
+      document.getElementById('pt-booking-ref').textContent = b.bookingId;
+      document.getElementById('pt-txn-id').textContent      = txnId;
+      document.getElementById('pt-qr-img').src = buildQRUrl(b, 300);
+
+      document.getElementById('dl-modal-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDownloadModal() {
+      document.getElementById('dl-modal-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+      _currentBooking = null;
+    }
+
+    function executeDownload() {
+      if (!_currentBooking) return;
+      var btn = document.getElementById('btn-download-now');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-spin"></span> Generating...';
+      var qrImg = document.getElementById('pt-qr-img');
+      var booking = _currentBooking;
+
+      function doCapture() {
+        var ticketEl = document.getElementById('printable-ticket');
+        html2canvas(ticketEl, { scale: 2.5, useCORS: true, backgroundColor: null, logging: false, allowTaint: false })
+          .then(function(canvas) {
+            var link = document.createElement('a');
+            link.download = 'EventEase-Ticket-' + booking.bookingId + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('\uD83C\uDFAB Ticket ' + booking.bookingId + ' downloaded!', 'success');
+            closeDownloadModal();
+          })
+          .catch(function(err) {
+            console.error('Download error:', err);
+            showToast('Could not generate image. Try again.', 'error');
+          })
+          .finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-download"></i> Download PNG';
+          });
+      }
+
+      if (qrImg.complete && qrImg.naturalWidth > 0) {
+        doCapture();
+      } else {
+        var done = false;
+        qrImg.onload  = function() { if (!done) { done = true; doCapture(); } };
+        qrImg.onerror = function() { if (!done) { done = true; doCapture(); } };
+        setTimeout(function() { if (!done) { done = true; doCapture(); } }, 3000);
+      }
+    }
+
+    function cancelTicket(bookingId) {
+      if (confirm(`Are you sure you want to cancel booking ${bookingId}?`)) {
+        EventStore.cancelBooking(bookingId);
+        showToast(`Ticket ${bookingId} cancelled. Refund initiated!`, 'info');
+        renderTickets();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account – EventEase</title>
+  <meta name="description" content="Create your free EventEase account and start discovering incredible events near you." />
+
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <!-- Split Screen Auth Layout (Image 2) -->
+  <div class="auth-split-layout">
+    
+    <!-- Left Column: Purple Brand Area -->
+    <div class="auth-brand-left">
+      <div class="brand-ticket-badge">
+        <i class="fas fa-ticket-alt"></i>
+      </div>
+      <h2>Join the community!</h2>
+      <p>Create your free account and start discovering incredible events near you.</p>
+    </div>
+
+    <!-- Right Column: Registration Form Area -->
+    <div class="auth-form-right">
+      <a href="index.html" class="auth-back-link">
+        <i class="fas fa-arrow-left"></i> Back to home
+      </a>
+
+      <h1 class="auth-form-title">Create account</h1>
+      <p class="auth-form-subtitle">
+        Already registered? <a href="login.html">Sign in</a>
+      </p>
+
+      <form id="register-form" onsubmit="handleRegisterSubmit(event)">
+        <!-- Full name -->
+        <div class="form-field-group">
+          <label class="form-field-label" for="full-name">Full name</label>
+          <input type="text" id="full-name" class="form-field-input" placeholder="Priya Sharma" required />
+        </div>
+
+        <!-- Email address -->
+        <div class="form-field-group">
+          <label class="form-field-label" for="email">Email address</label>
+          <input type="email" id="email" class="form-field-input" placeholder="priya@example.com" required />
+        </div>
+
+        <!-- Phone number -->
+        <div class="form-field-group">
+          <label class="form-field-label" for="phone">Phone number</label>
+          <input type="tel" id="phone" class="form-field-input" placeholder="+91 98765 43210" required />
+        </div>
+
+        <!-- Password -->
+        <div class="form-field-group">
+          <label class="form-field-label" for="password">Password</label>
+          <input type="password" id="password" class="form-field-input" placeholder="Create a strong password" required />
+        </div>
+
+        <!-- Confirm password -->
+        <div class="form-field-group">
+          <label class="form-field-label" for="confirm-password">Confirm password</label>
+          <input type="password" id="confirm-password" class="form-field-input" placeholder="Re-enter password" required />
+        </div>
+
+        <!-- Terms checkbox -->
+        <div class="form-checkbox-row">
+          <input type="checkbox" id="terms-check" required checked />
+          <label for="terms-check">
+            I agree to EventEase <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-auth-submit">
+          Create free account
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('full-name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match. Please re-enter.', 'error');
+        return;
+      }
+
+      const user = {
+        id: Date.now(),
+        name: name || 'Priya Sharma',
+        email: email || 'priya@example.com',
+        phone: phone || '+91 98765 43210',
+        role: 'USER'
+      };
+
+      Auth.setUser(user);
+      showToast('Account created successfully! Welcome to EventEase 🎉', 'success');
+
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

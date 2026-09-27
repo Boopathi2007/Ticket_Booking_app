@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventEase – Discover and Book Amazing Events</title>
+  <meta name="description" content="From music festivals to tech conferences — find, book, and enjoy thousands of events near you on EventEase." />
+
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- ============================================================
+       TOP NAVBAR (Shown on Dashboard & Available across pages)
+       ============================================================ -->
+  <header class="navbar-top" id="main-navbar">
+    <div class="container navbar-top-inner">
+      <!-- Logo -->
+      <a href="index.html" class="brand-logo">
+        <div class="brand-icon-box">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        <span class="brand-text">Event<span>Ease</span></span>
+      </a>
+
+      <!-- Center Navigation Menu (Image 4) -->
+      <nav>
+        <ul class="nav-center-menu" id="nav-menu">
+          <li><a href="index.html" class="active" id="nav-home">Home</a></li>
+          <li><a href="events.html" id="nav-explore">Explore</a></li>
+          <li><a href="tickets.html" id="nav-tickets">My Tickets</a></li>
+        </ul>
+      </nav>
+
+      <!-- Right Actions (Notifications & User Avatar Pill OR Sign In / Get Started) -->
+      <div class="nav-right-actions" id="nav-user-area">
+        <!-- Rendered dynamically by Auth.renderHeaderNav() -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       VIEW 1: AUTHENTICATED DASHBOARD (IMAGE 4)
+       ============================================================ -->
+  <main id="dashboard-view">
+    <!-- Hero Banner with Greeting & Yellow Accent Title -->
+    <section class="hero-dashboard">
+      <div class="container">
+        <div class="hero-greeting" id="greeting-text">
+          Hello, Priya 👋
+        </div>
+        <h1 class="hero-dashboard-title">
+          Find Your Next
+          <span class="highlight-yellow">Favourite Event</span>
+        </h1>
+        <p class="hero-dashboard-sub">
+          Explore thousands of events in your city
+        </p>
+      </div>
+    </section>
+
+    <!-- Floating Capsule Search Bar -->
+    <div class="search-capsule-wrap">
+      <div class="search-capsule">
+        <div class="search-capsule-input-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="dashboard-search-input" placeholder="Search events, artists, venues..." onkeyup="handleLiveSearch(event)" />
+        </div>
+        <div class="search-city-select-box">
+          <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+          <select id="city-selector" onchange="handleCityFilter(this.value)">
+            <option value="All">All Cities</option>
+            <option value="Delhi" selected>Delhi</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Bangalore">Bangalore</option>
+            <option value="Hyderabad">Hyderabad</option>
+            <option value="Pune">Pune</option>
+            <option value="Chennai">Chennai</option>
+          </select>
+        </div>
+        <button class="search-btn-purple" onclick="executeSearch()">
+          Search
+        </button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Browse by Category Section (Image 4) -->
+      <section class="section-categories">
+        <div class="section-head-row">
+          <h2 class="section-title">Browse by Category</h2>
+          <a href="events.html" class="section-view-all">View all <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
+        </div>
+
+        <div class="categories-pills-row" id="categories-container">
+          <div class="category-pill-card active" onclick="filterByCategory('All', this)">
+            <div class="cat-icon">✨</div>
+            <div class="cat-label">All</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Music', this)">
+            <div class="cat-icon">🎵</div>
+            <div class="cat-label">Music</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Tech', this)">
+            <div class="cat-icon">💻</div>
+            <div class="cat-label">Tech</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Art', this)">
+            <div class="cat-icon">🎨</div>
+            <div class="cat-label">Art</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Food', this)">
+            <div class="cat-icon">🍲</div>
+            <div class="cat-label">Food</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Sports', this)">
+            <div class="cat-icon">🏅</div>
+            <div class="cat-label">Sports</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Comedy', this)">
+            <div class="cat-icon">😂</div>
+            <div class="cat-label">Comedy</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Wellness', this)">
+            <div class="cat-icon">🧘</div>
+            <div class="cat-label">Wellness</div>
+          </div>
+          <div class="category-pill-card" onclick="filterByCategory('Workshop', this)">
+            <div class="cat-icon">📷</div>
+            <div class="cat-label">Workshop</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trending Now Section (Image 4) -->
+      <section class="section-events-row" id="trending-section">
+        <div class="section-head-row">
+          <h2 class="section-title">
+            <span style="color: var(--primary); font-size: 1.25rem;"><i class="fas fa-chart-line"></i></span> Trending Now
+          </h2>
+          <a href="events.html?filter=trending" class="section-view-all">See all <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
+        </div>
+        <div class="events-grid-3" id="trending-events-grid">
+          <!-- Populated by JS with Neon Nights, Mumbai Art Show, IPL Finals -->
+        </div>
+      </section>
+
+      <!-- Upcoming Events Section (Image 4) -->
+      <section class="section-events-row" id="upcoming-section">
+        <div class="section-head-row">
+          <h2 class="section-title">
+            <span style="color: var(--primary); font-size: 1.25rem;"><i class="far fa-calendar-alt"></i></span> Upcoming Events
+          </h2>
+          <a href="events.html?filter=upcoming" class="section-view-all">See all <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
+        </div>
+        <div class="events-grid-3" id="upcoming-events-grid">
+          <!-- Populated by JS with TechSummit India, Street Food Carnival, Stand-Up Night -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       VIEW 2: LANDING PAGE (IMAGE 1)
+       ============================================================ -->
+  <div id="landing-view" style="display: none;">
+    <!-- Landing Hero -->
+    <section class="hero-landing">
+      <div class="container">
+        <!-- Ticket Icon Badge -->
+        <div class="hero-badge-ticket">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+
+        <!-- Title -->
+        <h1 class="hero-landing-title">
+          Discover and Book
+          <span class="highlight-yellow">Amazing Events</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="hero-landing-subtitle">
+          From music festivals to tech conferences — find, book, and enjoy thousands of events near you.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-landing-actions">
+          <a href="register.html" class="btn-pill-white">
+            Get Started Free
+          </a>
+          <button onclick="switchToDashboard()" class="btn-pill-translucent">
+            Browse Events
+          </button>
+        </div>
+
+        <!-- Login Link -->
+        <div class="hero-landing-login-link">
+          Already have an account? <a href="login.html">Log in</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why EventEase? Section (Image 1) -->
+    <section class="section-why">
+      <div class="container">
+        <h2 class="section-why-title">Why EventEase?</h2>
+        <p class="section-why-sub">Everything you need for seamless event experiences</p>
+
+        <div class="why-cards-grid">
+          <!-- Card 1: Discover Events -->
+          <div class="why-card">
+            <div class="why-icon-badge badge-purple">
+              <i class="fas fa-search"></i>
+            </div>
+            <h3>Discover Events</h3>
+            <p>Browse thousands of events by category, city, and date. Never miss what matters to you.</p>
+          </div>
+
+          <!-- Card 2: Instant Booking -->
+          <div class="why-card">
+            <div class="why-icon-badge badge-pink">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <h3>Instant Booking</h3>
+            <p>Select tickets, pay securely, and receive your digital ticket — all in under 2 minutes.</p>
+          </div>
+
+          <!-- Card 3: Trusted Platform -->
+          <div class="why-card">
+            <div class="why-icon-badge badge-amber">
+              <i class="fas fa-award"></i>
+            </div>
+            <h3>Trusted Platform</h3>
+            <p>100% secure payments, verified organizers, and instant refund policy on cancelled events.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Banner (Image 1) -->
+    <section class="stats-banner">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <h2>10,000+</h2>
+            <p>Events Listed</p>
+          </div>
+          <div class="stat-item">
+            <h2>5 Lakh+</h2>
+            <p>Happy Attendees</p>
+          </div>
+          <div class="stat-item">
+            <h2>50+</h2>
+            <p>Cities</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       FOOTER (Matching Image 1 & Image 4)
+       ============================================================ -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-logo">
+        <div class="logo-box">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        Event<span>Ease</span>
+      </div>
+      <div class="footer-copy">
+        2026 EventEase. Made with love for event lovers.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       INTERACTIVE TICKET BOOKING MODAL
+       ============================================================ -->
+  <div class="modal-backdrop" id="booking-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" onclick="closeBookingModal()">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <div class="modal-header">
+        <span class="category-tag-pill" id="modal-event-category" style="margin-bottom: 0.5rem; display: inline-block;">Music</span>
+        <h2 id="modal-event-title" style="font-size: 1.4rem; margin-bottom: 0.35rem;">Event Title</h2>
+        <p id="modal-event-venue" style="color: var(--text-muted); font-size: 0.88rem;">
+          <i class="fas fa-map-marker-alt"></i> Venue Details
+        </p>
+      </div>
+
+      <div class="modal-body">
+        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-heading);">1. Select Ticket Tier</h4>
+        <div id="modal-ticket-tiers">
+          <!-- Populated by JS -->
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #F1F5F9;">
+          <div>
+            <h4 style="font-size: 0.95rem; color: var(--text-heading);">2. Select Quantity</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Max 6 tickets per booking</p>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateModalQty(-1)">-</button>
+            <span class="qty-val" id="modal-qty-val">1</span>
+            <button class="qty-btn" onclick="updateModalQty(1)">+</button>
+          </div>
+        </div>
+
+        <!-- Receipt Breakdown -->
+        <div class="order-summary-box">
+          <div class="order-summary-row">
+            <span>Ticket Price (<span id="summary-tier-name">General</span> x <span id="summary-qty">1</span>)</span>
+            <span id="summary-base-price">₹999</span>
+          </div>
+          <div class="order-summary-row">
+            <span>GST & Service Fee (5%)</span>
+            <span id="summary-tax">₹50</span>
+          </div>
+          <div class="order-summary-row total">
+            <span>Total Payable</span>
+            <span id="summary-total-price">₹1,049</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">Total Amount</div>
+          <div id="modal-footer-price" style="font-size: 1.3rem; font-weight: 800; color: var(--primary); font-family: var(--font-heading);">₹1,049</div>
+        </div>
+        <button class="btn-pill-white" style="background: var(--primary); color: #FFFFFF;" onclick="proceedToCheckout()">
+          Proceed to Pay <i class="fas fa-arrow-right" style="margin-left: 0.4rem; font-size: 0.85rem;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // State management
+    let activeCategory = 'All';
+    let activeCity = 'Delhi';
+    let currentSelectedEvent = null;
+    let selectedTierIndex = 0;
+    let selectedQty = 1;
+
+    // Check query params for mode (?mode=guest)
+    const urlParams = new URLSearchParams(window.location.search);
+    const modeParam = urlParams.get('mode');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = Auth.getUser();
+      Auth.renderHeaderNav('nav-user-area');
+
+      if (modeParam === 'guest' || !user || !user.isLoggedIn) {
+        showLandingMode();
+      } else {
+        showDashboardMode(user);
+      }
+
+      renderAllEvents();
+    });
+
+    function showDashboardMode(user) {
+      document.getElementById('dashboard-view').style.display = 'block';
+      document.getElementById('landing-view').style.display = 'none';
+      document.getElementById('main-navbar').style.display = 'block';
+      Auth.renderHeaderNav('nav-user-area');
+      if (user && user.firstName) {
+        document.getElementById('greeting-text').innerHTML = `Hello, ${user.firstName} 👋`;
+      }
+    }
+
+    function showLandingMode() {
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('landing-view').style.display = 'block';
+      document.getElementById('main-navbar').style.display = 'block';
+      Auth.renderHeaderNav('nav-user-area');
+    }
+
+    function switchToDashboard() {
+      const user = Auth.getUser();
+      if (user && user.isLoggedIn) {
+        showDashboardMode(user);
+      } else {
+        // Show dashboard in browse mode
+        document.getElementById('dashboard-view').style.display = 'block';
+        document.getElementById('landing-view').style.display = 'none';
+        document.getElementById('greeting-text').innerHTML = `Welcome to EventEase 👋`;
+        Auth.renderHeaderNav('nav-user-area');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleModeSwitch() {
+      if (document.getElementById('landing-view').style.display === 'none') {
+        showLandingMode();
+        showToast('Switched to Landing Page view');
+      } else {
+        showDashboardMode(Auth.getUser() || { firstName: 'Guest' });
+        showToast('Switched to App Dashboard view');
+      }
+    }
+
+    function renderAllEvents() {
+      const events = EventStore.getEvents();
+
+      // Trending section (Neon Nights, Mumbai Contemporary Art, IPL Finals)
+      const trendingEvents = events.filter(e => e.isTrending);
+      const trendingGrid = document.getElementById('trending-events-grid');
+      trendingGrid.innerHTML = trendingEvents.map(renderEventCard).join('');
+
+      // Upcoming section (TechSummit, Street Food Carnival, Stand-Up Night)
+      const upcomingEvents = events.filter(e => e.isUpcoming);
+      const upcomingGrid = document.getElementById('upcoming-events-grid');
+      upcomingGrid.innerHTML = upcomingEvents.map(renderEventCard).join('');
+    }
+
+    // Category filter
+    function filterByCategory(cat, element) {
+      activeCategory = cat;
+      document.querySelectorAll('.category-pill-card').forEach(el => el.classList.remove('active'));
+      if (element) element.classList.add('active');
+
+      const events = EventStore.getEvents();
+      let filtered = events;
+      if (cat !== 'All') {
+        filtered = filtered.filter(e => e.category.toLowerCase() === cat.toLowerCase());
+      }
+      if (activeCity && activeCity !== 'All') {
+        filtered = filtered.filter(e => e.city.toLowerCase() === activeCity.toLowerCase());
+      }
+
+      const trendingGrid = document.getElementById('trending-events-grid');
+      const upcomingGrid = document.getElementById('upcoming-events-grid');
+
+      if (cat !== 'All') {
+        trendingGrid.innerHTML = filtered.length ? filtered.map(renderEventCard).join('') : '<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:2rem;">No events found in this category.</p>';
+        upcomingGrid.innerHTML = '';
+        document.getElementById('upcoming-section').style.display = 'none';
+      } else {
+        document.getElementById('upcoming-section').style.display = 'block';
+        renderAllEvents();
+      }
+    }
+
+    // City selector
+    function handleCityFilter(city) {
+      activeCity = city;
+      showToast(`Showing events in ${city}`);
+      filterByCategory(activeCategory, null);
+    }
+
+    // Search
+    function handleLiveSearch(e) {
+      if (e.key === 'Enter') executeSearch();
+    }
+
+    function executeSearch() {
+      const q = document.getElementById('dashboard-search-input').value.trim().toLowerCase();
+      if (!q) {
+        renderAllEvents();
+        return;
+      }
+      const events = EventStore.getEvents();
+      const results = events.filter(e => 
+        e.title.toLowerCase().includes(q) || 
+        e.venue.toLowerCase().includes(q) || 
+        e.category.toLowerCase().includes(q)
+      );
+
+      document.getElementById('trending-section').querySelector('.section-title').innerHTML = `Search results for "${q}" (${results.length})`;
+      document.getElementById('trending-events-grid').innerHTML = results.length ? results.map(renderEventCard).join('') : '<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:2rem;">No matching events found.</p>';
+      document.getElementById('upcoming-section').style.display = 'none';
+    }
+
+    // Booking modal logic
+    function openBookingModal(eventId) {
+      const evt = EventStore.getEventById(eventId);
+      if (!evt) return;
+
+      currentSelectedEvent = evt;
+      selectedTierIndex = 0;
+      selectedQty = 1;
+
+      document.getElementById('modal-event-title').innerText = evt.title;
+      document.getElementById('modal-event-category').innerText = evt.category;
+      document.getElementById('modal-event-venue').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${evt.venue} · ${evt.dateDisplay}`;
+
+      // Render tiers
+      const tiersContainer = document.getElementById('modal-ticket-tiers');
+      tiersContainer.innerHTML = evt.tiers.map((t, idx) => `
+        <div class="ticket-tier-option ${idx === 0 ? 'selected' : ''}" onclick="selectTier(${idx})">
+          <div class="ticket-tier-info">
+            <h4>${t.name}</h4>
+            <p>${t.desc}</p>
+          </div>
+          <div class="ticket-tier-price">
+            ${t.price === 0 ? 'Free' : '₹' + t.price.toLocaleString('en-IN')}
+          </div>
+        </div>
+      `).join('');
+
+      updateModalReceipt();
+      document.getElementById('booking-modal').classList.add('show');
+    }
+
+    function selectTier(idx) {
+      selectedTierIndex = idx;
+      document.querySelectorAll('.ticket-tier-option').forEach((el, i) => {
+        el.classList.toggle('selected', i === idx);
+      });
+      updateModalReceipt();
+    }
+
+    function updateModalQty(delta) {
+      selectedQty = Math.max(1, Math.min(6, selectedQty + delta));
+      document.getElementById('modal-qty-val').innerText = selectedQty;
+      updateModalReceipt();
+    }
+
+    function updateModalReceipt() {
+      if (!currentSelectedEvent) return;
+      const tier = currentSelectedEvent.tiers[selectedTierIndex];
+      const basePrice = tier.price * selectedQty;
+      const tax = tier.price === 0 ? 0 : Math.round(basePrice * 0.05);
+      const total = basePrice + tax;
+
+      document.getElementById('summary-tier-name').innerText = tier.name;
+      document.getElementById('summary-qty').innerText = selectedQty;
+      document.getElementById('summary-base-price').innerText = basePrice === 0 ? 'Free' : `₹${basePrice.toLocaleString('en-IN')}`;
+      document.getElementById('summary-tax').innerText = tax === 0 ? '₹0' : `₹${tax.toLocaleString('en-IN')}`;
+      document.getElementById('summary-total-price').innerText = total === 0 ? 'Free' : `₹${total.toLocaleString('en-IN')}`;
+      document.getElementById('modal-footer-price').innerText = total === 0 ? 'Free' : `₹${total.toLocaleString('en-IN')}`;
+    }
+
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.remove('show');
+    }
+
+    function proceedToCheckout() {
+      if (!currentSelectedEvent) return;
+      if (!Auth.isLoggedIn()) {
+        showToast('Please sign in to complete your booking', 'warning');
+        setTimeout(() => {
+          window.location.href = 'login.html?redirect=index.html';
+        }, 800);
+        return;
+      }
+      const user = Auth.getUser();
+      const tier = currentSelectedEvent.tiers[selectedTierIndex];
+      const basePrice = tier.price * selectedQty;
+      const tax = tier.price === 0 ? 0 : Math.round(basePrice * 0.05);
+      const total = basePrice + tax;
+
+      const newBooking = {
+        bookingId: 'EVT-' + Math.floor(10000 + Math.random() * 90000),
+        eventId: currentSelectedEvent.id,
+        eventTitle: currentSelectedEvent.title,
+        category: currentSelectedEvent.category,
+        dateDisplay: currentSelectedEvent.dateDisplay,
+        venue: currentSelectedEvent.venue,
+        tier: tier.name,
+        quantity: selectedQty,
+        totalAmount: total,
+        status: 'CONFIRMED',
+        bookedOn: new Date().toISOString().split('T')[0],
+        userName: user.name || 'Priya Sharma',
+        userEmail: user.email || 'priya@example.com'
+      };
+
+      EventStore.addBooking(newBooking);
+      closeBookingModal();
+      showToast(`🎉 Booking Confirmed! Ticket ID: ${newBooking.bookingId}`, 'success');
+
+      setTimeout(() => {
+        window.location.href = 'tickets.html';
+      }, 1200);
+    }
+
+    // User dropdown & notifications
+    function toggleUserDropdown() {
+      document.getElementById('user-dropdown').classList.toggle('show');
+    }
+
+    function closeUserDropdown() {
+      document.getElementById('user-dropdown').classList.remove('show');
+    }
+
+    function toggleNotifications() {
+      showToast('🔔 You have 1 active booking: Neon Nights Music Festival', 'info');
+    }
+
+    function handleLogout() {
+      Auth.logout();
+    }
+
+    window.onclick = function(e) {
+      if (!e.target.closest('#user-avatar-btn') && !e.target.closest('#user-dropdown')) {
+        closeUserDropdown();
+      }
+      if (e.target === document.getElementById('booking-modal')) {
+        closeBookingModal();
+      }
+    };
+  </script>
+</body>
+</html>
