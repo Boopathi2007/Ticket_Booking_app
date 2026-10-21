@@ -4,6 +4,26 @@
 
 const AUTH_STORAGE_KEY = 'eventease_current_user';
 
+// ── One-time cleanup: remove stale mock/hardcoded data from old version ──
+(function cleanStaleMockData() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (raw) {
+      const u = JSON.parse(raw);
+      // If the stored user is the old hardcoded mock, clear it
+      if (
+        u &&
+        (u.email === 'priya@example.com' ||
+         u.name === 'Priya Sharma' ||
+         u.initials === 'PS')
+      ) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem('eventease_token');
+      }
+    }
+  } catch (_) {}
+})();
+
 const Auth = {
   /** Get logged in user or null */
   getUser() {
@@ -33,22 +53,24 @@ const Auth = {
 
   /** Store authenticated user */
   setUser(user) {
-    const name = user.name || 'Priya Sharma';
+    const defaultName = user.email ? (user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)) : 'User';
+    const name = user.name || defaultName;
     const initials = name
       .split(' ')
+      .filter(Boolean)
       .map(n => n[0])
       .join('')
       .substring(0, 2)
-      .toUpperCase() || 'PS';
+      .toUpperCase() || 'U';
     const firstName = name.split(' ')[0] || 'User';
 
     const userObj = {
-      id: user.id || 101,
+      id: user.id || Date.now(),
       name: name,
       firstName: firstName,
       initials: initials,
-      email: user.email || 'priya@example.com',
-      phone: user.phone || '+91 98765 43210',
+      email: user.email || '',
+      phone: user.phone || '',
       role: user.role || 'USER',
       isLoggedIn: true
     };
@@ -59,6 +81,7 @@ const Auth = {
   /** Log out user, remove auth state, and update UI */
   logout() {
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem('eventease_token');
     if (typeof showToast === 'function') {
       showToast('Logged out successfully', 'info');
     }
@@ -68,15 +91,30 @@ const Auth = {
     }, 400);
   },
 
-  /** Demo Login Helper */
-  loginAs(email, name = 'Priya Sharma') {
-    const role = email.includes('admin') ? 'ADMIN' : 'USER';
-    const finalName = role === 'ADMIN' ? 'EventEase Admin' : name;
+  /** Demo / Local Login Helper */
+  loginAs(email, name = null, role = null) {
+    let finalRole = role || (email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER');
+    let finalName = name;
+
+    if (!finalName) {
+      const registeredUsers = JSON.parse(localStorage.getItem('eventease_registered_users') || '[]');
+      const found = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+      if (found && found.name) {
+        finalName = found.name;
+        finalRole = found.role || finalRole;
+      } else if (finalRole === 'ADMIN') {
+        finalName = 'EventEase Admin';
+      } else {
+        const username = email.split('@')[0] || 'User';
+        finalName = username.charAt(0).toUpperCase() + username.slice(1);
+      }
+    }
+
     this.setUser({
-      id: role === 'ADMIN' ? 1 : 101,
+      id: finalRole === 'ADMIN' ? 1 : Date.now(),
       name: finalName,
       email: email,
-      role: role
+      role: finalRole
     });
     if (typeof showToast === 'function') {
       showToast(`Welcome back, ${finalName}!`, 'success');

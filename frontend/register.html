@@ -37,17 +37,17 @@
         Already registered? <a href="login.html">Sign in</a>
       </p>
 
-      <form id="register-form" onsubmit="handleRegisterSubmit(event)">
+      <form id="register-form" onsubmit="handleRegisterSubmit(event)" autocomplete="off">
         <!-- Full name -->
         <div class="form-field-group">
           <label class="form-field-label" for="full-name">Full name</label>
-          <input type="text" id="full-name" class="form-field-input" placeholder="Priya Sharma" required />
+          <input type="text" id="full-name" name="full-name" class="form-field-input" placeholder="e.g. Boopathi Raja" required autocomplete="off" />
         </div>
 
         <!-- Email address -->
         <div class="form-field-group">
           <label class="form-field-label" for="email">Email address</label>
-          <input type="email" id="email" class="form-field-input" placeholder="priya@example.com" required />
+          <input type="email" id="email" name="reg-email" class="form-field-input" placeholder="you@example.com" required autocomplete="off" />
         </div>
 
         <!-- Phone number -->
@@ -59,13 +59,13 @@
         <!-- Password -->
         <div class="form-field-group">
           <label class="form-field-label" for="password">Password</label>
-          <input type="password" id="password" class="form-field-input" placeholder="Create a strong password" required />
+          <input type="password" id="password" name="reg-password" class="form-field-input" placeholder="Create a strong password" required autocomplete="new-password" />
         </div>
 
         <!-- Confirm password -->
         <div class="form-field-group">
           <label class="form-field-label" for="confirm-password">Confirm password</label>
-          <input type="password" id="confirm-password" class="form-field-input" placeholder="Re-enter password" required />
+          <input type="password" id="confirm-password" name="reg-confirm" class="form-field-input" placeholder="Re-enter password" required autocomplete="new-password" />
         </div>
 
         <!-- Terms checkbox -->
@@ -86,10 +86,20 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/utils.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
   <script>
-    function handleRegisterSubmit(e) {
+    // Clear form on page load to prevent browser pre-fill
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('full-name').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('phone').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('confirm-password').value = '';
+    });
+
+    async function handleRegisterSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('full-name').value.trim();
       const email = document.getElementById('email').value.trim();
@@ -102,20 +112,42 @@
         return;
       }
 
+      // 1. Try Backend API register if server is active
+      if (typeof api !== 'undefined' && api.auth && api.auth.register) {
+        try {
+          await api.auth.register({ name, email, password, phone });
+        } catch (err) {
+          console.warn('Backend register not available, saving locally:', err.message);
+        }
+      }
+
+      // 2. Save into registered users list for local authentication
+      let registeredUsers = JSON.parse(localStorage.getItem('eventease_registered_users') || '[]');
+      registeredUsers = registeredUsers.filter(u => u.email && u.email.toLowerCase() !== email.toLowerCase());
+      registeredUsers.push({
+        id: Date.now(),
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+        role: 'USER'
+      });
+      localStorage.setItem('eventease_registered_users', JSON.stringify(registeredUsers));
+
       const user = {
         id: Date.now(),
-        name: name || 'Priya Sharma',
-        email: email || 'priya@example.com',
-        phone: phone || '+91 98765 43210',
+        name: name,
+        email: email,
+        phone: phone,
         role: 'USER'
       };
 
       Auth.setUser(user);
-      showToast('Account created successfully! Welcome to EventEase 🎉', 'success');
+      showToast(`Account created successfully! Welcome, ${name} 🎉`, 'success');
 
       setTimeout(() => {
         window.location.href = 'index.html';
-      }, 1000);
+      }, 900);
     }
   </script>
 </body>

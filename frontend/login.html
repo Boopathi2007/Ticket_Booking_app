@@ -12,9 +12,13 @@
 </head>
 <body>
 
-  <div id="toast-container"></div>
+  <script>
+    // Ensure no stale user data persists when loading login page
+    localStorage.removeItem('eventease_current_user');
+    localStorage.removeItem('eventease_token');
+  </script>
 
-  <!-- Split Screen Auth Layout (Image 3) -->
+  <!-- Split Screen Auth Layout -->
   <div class="auth-split-layout">
     
     <!-- Left Column: Purple Brand Area -->
@@ -38,17 +42,34 @@
         Don't have an account? <a href="register.html">Sign up free</a>
       </p>
 
-      <form id="login-form" onsubmit="handleLoginSubmit(event)">
+      <!-- autocomplete="off" prevents browser from auto-filling old saved credentials -->
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="off">
         <!-- Email address -->
         <div class="form-field-group">
-          <label class="form-field-label" for="email">Email address</label>
-          <input type="email" id="email" class="form-field-input" placeholder="you@example.com" required value="priya@example.com" />
+          <label class="form-field-label" for="login-email">Email address</label>
+          <input
+            type="email"
+            id="login-email"
+            name="login-email"
+            class="form-field-input"
+            placeholder="you@example.com"
+            required
+            autocomplete="off"
+          />
         </div>
 
         <!-- Password -->
         <div class="form-field-group">
-          <label class="form-field-label" for="password">Password</label>
-          <input type="password" id="password" class="form-field-input" placeholder="Enter your password" required value="Password@123" />
+          <label class="form-field-label" for="login-password">Password</label>
+          <input
+            type="password"
+            id="login-password"
+            name="login-password"
+            class="form-field-input"
+            placeholder="Enter your password"
+            required
+            autocomplete="new-password"
+          />
         </div>
 
         <!-- Forgot password -->
@@ -59,14 +80,9 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="btn-auth-submit">
+        <button type="submit" id="login-submit-btn" class="btn-auth-submit">
           Sign in
         </button>
-
-        <!-- Demo Credentials Box (Image 3) -->
-        <div class="demo-account-pill-box" onclick="fillAdminDemo()" title="Click to autofill admin demo">
-          Demo: use <strong>admin@eventease.in</strong> for admin access
-        </div>
 
         <!-- Divider -->
         <div class="auth-or-divider">
@@ -88,30 +104,88 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/utils.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
   <script>
-    function handleLoginSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      
-      let name = 'Priya Sharma';
-      if (email.includes('admin')) name = 'EventEase Admin';
-      
-      Auth.loginAs(email, name);
-    }
+    // Clear any stale pre-filled values as soon as page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      // If a session exists, log out to avoid showing previous user's name
+      if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) {
+        Auth.logout();
+      }
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    });
 
-    function fillAdminDemo() {
-      document.getElementById('email').value = 'admin@eventease.in';
-      document.getElementById('password').value = 'Admin@123';
-      showToast('Admin credentials filled! Click "Sign in" to proceed.', 'info');
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        showToast('Please enter email and password.', 'error');
+        return;
+      }
+
+      // 1. Try Backend API login if Spring Boot server is running
+      if (typeof api !== 'undefined' && api.auth && api.auth.login) {
+        try {
+          const res = await api.auth.login({ email, password });
+          if (res && res.token) {
+            localStorage.setItem('eventease_token', res.token);
+            Auth.setUser({
+              id: res.userId,
+              name: res.name,
+              email: res.email,
+              role: res.role
+            });
+            showToast(`Welcome back, ${res.name}! 🎉`, 'success');
+            setTimeout(() => {
+              const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+              window.location.href = redirect;
+            }, 600);
+            return;
+          }
+        } catch (err) {
+          // Backend not running – fall through to local auth
+          console.info('Backend not reachable, using local auth.');
+        }
+      }
+
+      // 2. Local auth: only allow login if account was registered via register.html
+      const registeredUsers = JSON.parse(localStorage.getItem('eventease_registered_users') || '[]');
+      const found = registeredUsers.find(u => u.email && u.email.toLowerCase() === email);
+
+      if (!found) {
+        showToast('No account found with this email. Please register first.', 'error');
+        return;
+      }
+
+      // Check password (plain-text local comparison – only for offline demo mode)
+      if (found.password && found.password !== password) {
+        showToast('Incorrect password. Please try again.', 'error');
+        return;
+      }
+
+      // Login success – use the exact name from registration
+      Auth.setUser({
+        id: found.id || Date.now(),
+        name: found.name,
+        email: found.email,
+        phone: found.phone || '',
+        role: found.role || 'USER'
+      });
+
+      showToast(`Welcome back, ${found.name}! 🎉`, 'success');
+      setTimeout(() => {
+        const redirect = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+        window.location.href = redirect;
+      }, 600);
     }
 
     function socialLogin(provider) {
-      showToast(`Signing in with ${provider}...`, 'info');
-      setTimeout(() => {
-        Auth.loginAs('priya@example.com', 'Priya Sharma');
-      }, 700);
+      showToast(`${provider} sign-in is not available in offline mode.`, 'info');
     }
   </script>
 </body>

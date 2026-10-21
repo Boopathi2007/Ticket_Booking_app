@@ -233,38 +233,50 @@ const EventStore = {
     return list.includes(eventId);
   },
 
-  getBookings() {
+  getAllBookings() {
     const data = localStorage.getItem('eventease_my_bookings');
-    return data ? JSON.parse(data) : [
-      {
-        bookingId: 'EVT-89241',
-        eventId: 1,
-        eventTitle: 'Neon Nights Music Festival',
-        category: 'Music',
-        dateDisplay: 'Sat, Sep 14, 2026 · 6:00 PM',
-        venue: 'JLN Stadium, Delhi',
-        tier: 'General Admission',
-        quantity: 2,
-        totalAmount: 2098,
-        status: 'CONFIRMED',
-        bookedOn: '2026-08-21',
-        userName: 'Priya Sharma',
-        userEmail: 'priya@example.com'
-      }
-    ];
+    if (!data) return [];
+    try {
+      return JSON.parse(data);
+    } catch (_) {
+      return [];
+    }
+  },
+
+  /** Get bookings strictly for the logged-in user or specified email */
+  getBookings(filterEmail = null) {
+    const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+    const targetEmail = (filterEmail || (currentUser ? currentUser.email : '') || '').trim().toLowerCase();
+    if (!targetEmail) return [];
+
+    const all = this.getAllBookings();
+    return all.filter(b => b && b.userEmail && b.userEmail.trim().toLowerCase() === targetEmail);
+  },
+
+  getBookingById(bookingId) {
+    const all = this.getAllBookings();
+    return all.find(b => b && b.bookingId === bookingId) || null;
   },
 
   addBooking(booking) {
-    const bookings = this.getBookings();
-    bookings.unshift(booking);
-    localStorage.setItem('eventease_my_bookings', JSON.stringify(bookings));
+    const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+    if (!booking.userEmail && currentUser && currentUser.email) {
+      booking.userEmail = currentUser.email;
+      booking.userName = currentUser.name || booking.userName;
+    }
+    if (booking.userEmail) {
+      booking.userEmail = booking.userEmail.trim().toLowerCase();
+    }
+    const all = this.getAllBookings();
+    all.unshift(booking);
+    localStorage.setItem('eventease_my_bookings', JSON.stringify(all));
     return booking;
   },
 
   cancelBooking(bookingId) {
-    let bookings = this.getBookings();
-    bookings = bookings.filter(b => b.bookingId !== bookingId);
-    localStorage.setItem('eventease_my_bookings', JSON.stringify(bookings));
+    let all = this.getAllBookings();
+    all = all.filter(b => b && b.bookingId !== bookingId);
+    localStorage.setItem('eventease_my_bookings', JSON.stringify(all));
   }
 };
 

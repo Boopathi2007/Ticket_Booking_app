@@ -391,9 +391,9 @@
   </div>
 </div>
 
-<script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
+<script src="js/utils.js?v=4"></script>
+<script src="js/auth.js?v=4"></script>
+<script src="js/api.js?v=4"></script>
 <script>
 Auth.requireAuth('login.html');
 
@@ -506,6 +506,15 @@ async function processPayment() {
     let result;
     try {
       result = await api.bookings.create(payload);
+      if (result) {
+        const user = Auth.getUser();
+        EventStore.addBooking({
+          ...result,
+          bookingId: result.bookingRef || result.bookingId || ('EVT-' + Math.floor(10000 + Math.random() * 90000)),
+          userName: user?.name || 'User',
+          userEmail: (user?.email || '').toLowerCase()
+        });
+      }
     } catch (apiErr) {
       // Standalone & Local fallback
       const user = Auth.getUser();
@@ -523,8 +532,8 @@ async function processPayment() {
         quantity: intent.quantity,
         status: 'CONFIRMED',
         bookedOn: new Date().toISOString().split('T')[0],
-        userName: user?.name || 'Priya Sharma',
-        userEmail: user?.email || 'priya@example.com'
+        userName: user?.name || 'Guest User',
+        userEmail: (user?.email || '').toLowerCase()
       };
       EventStore.addBooking(result);
     }

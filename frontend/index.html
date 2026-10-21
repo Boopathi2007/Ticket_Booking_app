@@ -52,7 +52,7 @@
     <section class="hero-dashboard">
       <div class="container">
         <div class="hero-greeting" id="greeting-text">
-          Hello, Priya 👋
+          Welcome to EventEase 👋
         </div>
         <h1 class="hero-dashboard-title">
           Find Your Next
@@ -345,8 +345,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/utils.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
   <script>
     // State management
     let activeCategory = 'All';
@@ -576,8 +576,8 @@
         totalAmount: total,
         status: 'CONFIRMED',
         bookedOn: new Date().toISOString().split('T')[0],
-        userName: user.name || 'Priya Sharma',
-        userEmail: user.email || 'priya@example.com'
+        userName: user.name || 'Guest User',
+        userEmail: (user.email || '').toLowerCase()
       };
 
       EventStore.addBooking(newBooking);

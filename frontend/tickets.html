@@ -203,8 +203,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/utils.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       Auth.renderHeaderNav('nav-user-area');
@@ -239,7 +240,7 @@
       return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&ecc=M&data=' + buildQRPayload(b);
     }
 
-    function renderTickets() {
+    async function renderTickets() {
       var container = document.getElementById('tickets-list');
 
       if (!Auth.isLoggedIn()) {
@@ -263,14 +264,32 @@
         return;
       }
 
-      const bookings = EventStore.getBookings();
+      const user = Auth.getUser();
+      let bookings = [];
+
+      // 1. Try Backend API first if running
+      if (typeof api !== 'undefined' && api.bookings && api.bookings.my) {
+        try {
+          const apiBookings = await api.bookings.my();
+          if (Array.isArray(apiBookings) && apiBookings.length) {
+            bookings = apiBookings;
+          }
+        } catch (_) {}
+      }
+
+      // 2. Fetch local bookings strictly belonging to this logged-in user
+      if (!bookings.length) {
+        bookings = EventStore.getBookings(user.email);
+      }
 
       if (!bookings.length) {
         container.innerHTML = `
           <div style="text-align: center; padding: 4rem 1.5rem; background: #FFFFFF; border-radius: 20px; border: 1px solid #EEF2F6;">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎟️</div>
-            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">No Active Tickets Found</h3>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">You haven't booked any event tickets yet.</p>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--text-heading);">No Active Tickets Found</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              You haven't booked any event tickets yet with this account (<strong>${user.name || user.email}</strong>).
+            </p>
             <a href="events.html" class="btn-pill-white" style="background: var(--primary); color: #FFFFFF;">
               Discover Events
             </a>
@@ -330,11 +349,7 @@
     var _currentBooking = null;
 
     function openDownloadModal(bookingId) {
-      var bookings = EventStore.getBookings();
-      var b = null;
-      for (var i = 0; i < bookings.length; i++) {
-        if (bookings[i].bookingId === bookingId) { b = bookings[i]; break; }
-      }
+      var b = EventStore.getBookingById(bookingId);
       if (!b) return;
       _currentBooking = b;
 
@@ -404,8 +419,13 @@
       }
     }
 
-    function cancelTicket(bookingId) {
+    async function cancelTicket(bookingId) {
       if (confirm(`Are you sure you want to cancel booking ${bookingId}?`)) {
+        if (typeof api !== 'undefined' && api.bookings && api.bookings.cancel) {
+          try {
+            await api.bookings.cancel(bookingId);
+          } catch (_) {}
+        }
         EventStore.cancelBooking(bookingId);
         showToast(`Ticket ${bookingId} cancelled. Refund initiated!`, 'info');
         renderTickets();
